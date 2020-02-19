@@ -1,0 +1,42 @@
+FastText: 
+Set up as explained in https://github.com/facebookresearch/fastText/tree/master/python
+
+Word2Vec:https://code.google.com/archive/p/word2vec/
+
+
+Results / Experiments:
+
+ -- PHASE 1 -- Results on Word Analogy task compared to other measures of averaging (for FASTTEXT, on a small WIKI Corpus - 10M words)
+
+-- SHUFFLE--
+
+First we create a large number of similar word embeddings by shuffling the texts.
+
+We've seen that binary-tree type transformations combined with step-by-step averaging yields significant improvements on the word analogy tasks for small corpora (see experiment (CW36): avg_binary.py).
+
+Initial Results: 42.52687499999999 +/- 0.8789542348012213 (to be updated with normalized vectors)
+
+Tree-Style Averaging Results:
+
+  2 - fold: 47.71%
+  4 - fold: 49.03%
+  8 - fold: 50.24%
+ 16 - fold: 50.72%
+ 32 - fold: 50.00%
+ 64 - fold: 50.48%
+128 - fold: 50.60%
+256 - fold: 50.00%
+
+--> Strongly Improved Results up to 8 / 16-fold averaging (relative improvement of 16% (!))- plateaus for more merges.
+
+We have also shown this performs better than simple averaging, meaning to transform all spaces into 1 (no binary merging) (see experiment (CW36): avg_simple.py) - plateaus at around 45%. 
+
+Naive averaging, without the transformations leads - as expected to only 3.02%. 
+
+Furthermore, it works better than training longer (i.e. training on a concatenated set of ~25 shuffled input corporas.), wich results in 33.8% on the word analogy task (See - shuffle_training_full.py).
+
+And - maybe suprisingly - this also works better than averaging the results of the evaluation, i.e. evaluating all of the embeddings individually and averaging over the results, which plateus at ~45% (see postprocessing_full.py).
+
+-- BOOTSTRAP -- 
+
+->> Looks even more powerful, looks like it scales better

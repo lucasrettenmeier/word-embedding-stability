@@ -1,0 +1,17 @@
+# Eval Files
+eval/*
+
+# Experiments
+exp/*
+
+# Archive
+archive/*
+
+# Word Embeddings
+lib/fastText/*
+lib/fastText_ownFork/*
+lib/glv/*
+lib/w2v/*
+
+
+
