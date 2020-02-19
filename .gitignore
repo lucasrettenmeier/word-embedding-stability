@@ -10,9 +10,10 @@ lib/fastText/
 lib/fastText_ownFork/
 lib/glv/
 lib/w2v/
+lib/__pycache__/
 
 # All the Random Things in the First folder
-*.py
+/*.py
 
 # Segmenter Files
 preproc/stanford_segmenter/
