@@ -1,17 +1,22 @@
 # Eval Files
 eval/*
 
-# Experiments
+# Unrelevant Files
 exp/*
-
-# Archive
 archive/*
 
 # Word Embeddings
-lib/fastText/*
-lib/fastText_ownFork/*
-lib/glv/*
-lib/w2v/*
+lib/fastText/
+lib/fastText_ownFork/
+lib/glv/
+lib/w2v/
+
+# All the Random Things in the First folder
+*.py
+
+# Segmenter Files
+preproc/stanford_segmenter/
+preproc/mosesdecoder/
 
 
 
