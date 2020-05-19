@@ -143,7 +143,8 @@ class Model:
 		binary = None,
 		model = None,
 		verbose = None,
-		memory = None
+		memory = None,
+		vocab_file = None,
 		):
 
 		train_data_file = os.path.abspath(train_data_file)
@@ -195,6 +196,9 @@ class Model:
 							' -sample ' + 		str(subsampling_rate) +
 							' -min-count ' +	str(min_count) +
 							' -threads ' +		str(thread_num))
+			if (vocab_file is not None):
+				word2vec_call += ' -read-vocab ' + vocab_file
+			print(word2vec_call)
 			call(word2vec_call, shell = True)
 			print('')
 
@@ -270,13 +274,16 @@ class Model:
 				call('chmod +x ' + glove_model[i], shell = True)
 
 			# STEP 1: Build Vocabulary
-			glove_vocab_call = (glove_model[0] + 
-							' -verbose ' + 		str(verbose) +
-							' -min-count ' +	str(min_count) +
-							' < ' + 			train_data_file +
-							' > ' + 			glove_model[4])
-			#print(glove_vocab_call)
-			call(glove_vocab_call, shell = True)
+			if (vocab_file is None):
+				glove_vocab_call = (glove_model[0] + 
+								' -verbose ' + 		str(verbose) +
+								' -min-count ' +	str(min_count) +
+								' < ' + 			train_data_file +
+								' > ' + 			glove_model[4])
+				#print(glove_vocab_call)
+				call(glove_vocab_call, shell = True)
+			else:
+				glove_model[4] = vocab_file
 			
 			# STEP 2: Build Cooccurrence Matrix
 			glove_cooccurrence_call = (glove_model[1] + 
@@ -284,7 +291,7 @@ class Model:
 							' -memory ' +		str(memory) +
 							' -window-size ' +	str(window_size) +
 							' -vocab-file ' + 	glove_model[4] +
-							' -overflow-file ' +glove_model[8] + 
+							' -overflow-file '+ glove_model[8] + 
 							' < ' + 			train_data_file +
 							' > ' + 			glove_model[5])
 			#print(glove_cooccurrence_call)
@@ -568,31 +575,38 @@ class Model:
 		# GLOVE
 		if(self.model_type == 'glove'):
 
-			# Open vocabulary file
+			# Open vocabulary file & store in list
 			voc_file_name = native_model[4]
 			voc_file = open(voc_file_name, mode = 'r', encoding="utf-8")
 			voc_file_lines = voc_file.read().splitlines()
 
-			# Open embeddings file
+			# Open embeddings file -> may be too large to store in list
 			vec_file_name = native_model[7]
 			vec_file = open(vec_file_name + '.txt', mode = 'r', encoding="utf-8")
-			vec_file_lines = vec_file.read().splitlines()
 			
-			# Get dimensions of the embeddings
-			self.voc_size = len(voc_file_lines)
-			self.dim_num = len(vec_file_lines[0].split(" ")) - 1
-
-			# Initialize memory
-			self.count = np.empty((self.voc_size), np.float32)
-			self.embeddings = np.empty((self.voc_size, self.dim_num), dtype = np.float32)
-
-			for i in range(0,self.voc_size):
-				voc_file_split = voc_file_lines[i].split(" ")
-				vec_file_split = vec_file_lines[i].split(" ")
+			# These files can get extremely large > Read Line by Line
+			line_count = len(voc_file_lines)
+			for line_index in range(line_count):
 				
-				self.words[i] = voc_file_split[0]
-				self.count[i] = voc_file_split[1]
-				self.embeddings[i,:] = np.array([vec_file_split[1:]], dtype = np.float32)
+				vec_file_line = vec_file.readline().rstrip('\n')
+
+				if (line_index == 0):
+			
+					# Get dimensions of the embeddings
+					self.voc_size = line_count
+					self.dim_num = len(vec_file_line.split(" ")) - 1
+
+					# Initialize memory
+					self.count = np.empty((self.voc_size), np.float32)
+					self.embeddings = np.empty((self.voc_size, self.dim_num), dtype = np.float32)
+
+				# Split Lines
+				voc_line_split = voc_file_lines[line_index].split(" ")
+				vec_line_split = vec_file_line.split(" ")
+
+				self.words[line_index] = voc_line_split[0]
+				self.count[line_index] = voc_line_split[1]
+				self.embeddings[line_index,:] = np.array([vec_line_split[1:]], dtype = np.float32)
 				
 			# Delete the temporary (native glove) files
 			voc_file.close()
@@ -628,8 +642,30 @@ class Model:
 			new_model.embeddings = self.embeddings[sorted_indices]
 			new_model.avg = self.avg[sorted_indices]
 
-			new_model.total_count = np.sum(self.count)
+			new_model.total_count = np.sum(new_model.count)
 			new_model.voc_size = threshold
+
+		return new_model
+
+	#---------------------------------------------------------------------------------------------------------------
+	# REDUCE VOCAB: Reduce the vocabulary to a given vocabulary
+	#---------------------------------------------------------------------------------------------------------------
+
+	def reduce_to_vocab(self, vocab):
+
+		new_model = Model(self.model_type)
+
+		new_model.words = {i: vocab[i] for i in range(len(vocab))}
+		new_model.indices = dict(map(reversed, new_model.words.items()))
+		
+		sorted_indices = np.array([self.indices[new_model.words[index]] for index in range(len(vocab))])
+		
+		new_model.count = self.count[sorted_indices]
+		new_model.embeddings = self.embeddings[sorted_indices]
+		new_model.avg = self.avg[sorted_indices]
+		
+		new_model.total_count = np.sum(new_model.count)
+		new_model.voc_size = len(vocab)
 
 		return new_model
 

@@ -9,6 +9,9 @@ import os
 import numpy as np
 import math as m
 
+# In- and Output
+import pickle as pkl
+
 #-------------------------------------------------------------------------------------------------------------------
 # Loading own Modules
 #-------------------------------------------------------------------------------------------------------------------
@@ -50,12 +53,12 @@ def get_nn_list(model1, model2, word_indices, k, allow_self_neighbor = False, ge
 	
 	# Step 1: Calculate lengths of all individual vectors
 	# -> Can be skipped, since vectors are always normalized
-	'''
+	#'''
 	model1.normalize()
 	model2.dim_num = len(model2.embeddings[0])
 	model2.voc_size = len(model2.embeddings)
 	model2.normalize()
-	'''
+	#'''
 	# Step 2: Calculate cosine distances for all words with respect to all words in the word index array
 
 	# Empty arrays for the nearest neighbor indices and the respective cosine distances
@@ -81,10 +84,9 @@ def get_nn_list(model1, model2, word_indices, k, allow_self_neighbor = False, ge
 			AB[:,word_indices[lower:upper]] = -1
 		
 		nn_arr.extend(np.argpartition(-AB, range(k), axis = 1)[:,:k].tolist())
-		
-		if (get_cosine_values):
-			cos_val_arr.extend([AB[i,nn_arr[i]].tolist() for i in range(upper-lower)])
 
+		if (get_cosine_values):
+			cos_val_arr.extend([AB[i,nn_arr[i + lower]].tolist() for i in range(upper-lower)])
 	if(get_cosine_values):
 		return nn_arr, cos_val_arr
 	else:
@@ -232,3 +234,94 @@ def get_pip_norm(model1, model2, word_indices = None, reduced = True, get_proxy 
 
 	print("Progress: {:2.2%} \nCompleted. Result for PIP norm: {:.3e}\n".format(1, norm))
 	return norm
+
+#-------------------------------------------------------------------------------------------------------------------
+# GET WORDWISE PIP NORM
+#
+# TBD
+#
+# NOTE: Make sure that the embedding spaces of the two models are aligned, i.e. the indices correspond to the same
+# words (by calling align_voc_with).
+#-------------------------------------------------------------------------------------------------------------------
+
+def get_ww_pip_norm(model1, model2, eval_indices, avg_indices = None):
+	
+	# Eval Arrays
+	eval1 = model1.embeddings[eval_indices]
+	eval2 = model2.embeddings[eval_indices]
+
+	# Avg Arrays
+	if avg_indices is not None:
+		avg1 = model1.embeddings[avg_indices]
+		avg2 = model2.embeddings[avg_indices]
+	else:
+		avg1 = model1.embeddings
+		avg2 = model2.embeddings
+
+	# Calculate with numpy routines, break down into batches, to prevent memory overflow
+	avg_count = len(avg1)
+	batch_size = min(256, avg_count)
+
+	# Initialize norm
+	squared_norm = np.zeros((len(eval1)))
+
+	# Precalculate Transposed Arrays
+	avg1_T = avg1.T
+	avg2_T = avg2.T
+
+	# Loop over batches
+	for i in range(int(avg_count / batch_size) + 1):
+		
+		# Get lower and upper index for batch
+		lower = i * batch_size
+		upper = min((i+1) * batch_size, avg_count)
+
+		# Build batch array
+		avg1_T_batch = avg1_T[:,lower:upper]
+		avg2_T_batch = avg2_T[:,lower:upper]
+
+		squared_norm += np.sum(np.square(np.matmul(eval1, avg1_T_batch) - np.matmul(eval2, avg2_T_batch)), axis = 1)
+
+		# Print progress
+		print("Progress: {:2.2%}".format(upper / avg_count), end="\r")
+	
+	norm = np.sqrt(squared_norm / avg_count)
+
+	print("Progress: {:2.2%}\n".format(upper / avg_count))
+	return norm
+
+#-------------------------------------------------------------------------------------------------------------------
+# GET Common Vocabulary
+#
+# TBD
+#
+#-------------------------------------------------------------------------------------------------------------------
+
+def get_common_vocab(model_dir_list):
+
+	common_vocab = set()
+
+	first_model = True
+	for dir_name in model_dir_list:
+		words = pkl.load(open(dir_name + '/voc.pkl', 'rb'))
+		indices = dict(map(reversed, words.items()))
+
+		if not first_model:
+			
+			# Find all words which are not in the vocab 
+			not_found = set()
+			for word in common_vocab:
+				if word not in indices:
+					not_found.add(word)
+
+			# Remove them
+			for word in not_found:
+				common_vocab.remove(word)
+
+
+		else:
+			first_model = False
+			for word in indices:
+				common_vocab.add(word)
+
+	return common_vocab
