@@ -28,14 +28,10 @@ mpl.rcParams.update(pgf_with_rc_fonts)
 #dist_folder = '/home/rettenls/data/experiments/wiki/analysis/word-wise-instability/'
 dist_folder = '/home/lucas/data/experiments/wiki/analysis/word-wise-instability/'
 
-language = 'fi'
+language = 'pl'
 models = ['word2vec', 'glove', 'fasttext']
 name_models = ['\\textbf{word2vec}', '\\textbf{GloVe}', '\\textbf{fastText}']
 fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True, sharey=True, figsize=(4, 7.5))
-
-models = ['glove', 'fasttext']
-name_models = ['\\textbf{word2vec}', '\\textbf{fastText}']
-fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True, sharey=True, figsize=(4, 7.5))
 
 # GET X & Y Minimum and Maximum
 
@@ -94,7 +90,10 @@ for i,cell in enumerate(ax):
     cell.legend()
 
     cell.set_ylabel('Word Instability', rotation = 90)
-    cell.set_ylabel(name_models[i], labelpad = -263, rotation = 90) 
+
+    secax = cell.secondary_yaxis('right')
+    secax.set_ylabel(name_models[i], rotation = 90) 
+    secax.set_ticks([])
 
     if (i == 2):
         cell.set_xlabel('Word Frequency')

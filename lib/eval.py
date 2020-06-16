@@ -118,7 +118,7 @@ def get_cosine_similarity(model1, model2, word_indices = None):
 	result = np.empty(total_size, dtype = np.float32)
 
 	# Calculate with numpy routines, break down into batches, to prevent memory overflow
-	batch_size = min(model1.max_dim_size(32), total_size)
+	batch_size = max(min(model1.max_dim_size(32), total_size),2)
 	
 	# Loop over batches    
 	for i in range(int(total_size / batch_size) + 1):

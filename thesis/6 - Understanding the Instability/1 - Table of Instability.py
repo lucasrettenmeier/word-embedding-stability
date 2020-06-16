@@ -50,13 +50,13 @@ exp_folder = '/home/rettenls/data/experiments/wiki/'
 dist_folder = '/home/rettenls/data/experiments/wiki/analysis/distribution/'
 
 languages = ['hi', 'fi', 'zh', 'cs', 'pl', 'pt', 'en']
-languages = ['en']
+languages = ['pt']
 models = ['fasttext', 'glove', 'word2vec']
 models = ['glove']
 data_types = ['fixed']
 model_type = 'skipgram'
 
-total_run_number = 16
+total_run_number = 4
 
 proxy_count = int(1.8e4)
 

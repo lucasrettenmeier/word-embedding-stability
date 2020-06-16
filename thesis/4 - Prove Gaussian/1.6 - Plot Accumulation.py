@@ -52,5 +52,5 @@ plt.tight_layout()
 plt.yticks([0,20000,40000,60000])
 
 # Save
-#plt.show()
-plt.savefig("/home/lucas/Google Drive/Documents/Studium/Masterthesis/Thesis/plots/gauss_accumulated.pgf")
+plt.show()
+#plt.savefig("/home/lucas/Google Drive/Documents/Studium/Masterthesis/Thesis/plots/gauss_accumulated.pgf")
